@@ -82,7 +82,7 @@ Run from the project root (requires no external libraries, build produces a stat
 
 ## Project Structure
 ```
-shell
+.
 ├── build.rs
 ├── build.sh
 ├── .cargo

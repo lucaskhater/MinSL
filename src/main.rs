@@ -1,12 +1,13 @@
 #![no_std]
 #![no_main]
 
-mod syscalls;
 mod cstr;
+mod lexer;
 mod memlibc;
 mod siglibc;
+mod syscalls;
 
-use crate::{syscalls::*, cstr::*};
+use crate::{cstr::*, syscalls::*};
 use core::mem::zeroed;
 
 const CMD_MAX_LENGTH: usize = 255;
@@ -18,10 +19,14 @@ pub extern "C" fn _main() -> ! {
     let prompt: &[u8] = b"MinSL:$ \0";
     let mut cmd: [u8; CMD_MAX_LENGTH] = [0; CMD_MAX_LENGTH];
     let mut count: isize;
-
+ 
     loop {
         unsafe {
-            _write(1, prompt.as_ptr() as *const u8, strlen(prompt.as_ptr() as *const u8));
+            _write(
+                1,
+                prompt.as_ptr() as *const u8,
+                strlen(prompt.as_ptr() as *const u8),
+            );
             count = _read(0, cmd.as_mut_ptr().cast(), CMD_MAX_LENGTH);
         }
 

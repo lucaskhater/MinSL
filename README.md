@@ -13,9 +13,11 @@ This project started as a learning exercise in **systems programming** and grew 
 - Hand-rolled entrypoint (`_start`) and syscall stubs in x86-64 assembly
 - Syscalls implemented directly: `write`, `read`, `fork`, `execve`, `waitid`, `exit`
 - Custom minimal libc replacements: `memcpy`, `memset`, `memcmp`, `memmove`
-- Supports launching external programs (e.g. `ls`, `whoami`, …)
+- Custom minimal cstring manipulation replacements: `strlen`, `strcmp`, `strncmp`, `strchr`
+- Supports launching external programs (e.g. `ls`, `whoami`, `mkdir`, `touch` …)
+- Tokenizes the input string and passes arguments to execve
 - Can run as Linux `init` inside an **initramfs**
-- Ultra small footprint: **~1.5 KB** statically linked ELF binary
+- Ultra small footprint: **~1.8 KB** statically linked ELF binary
 
 
 ## What I Learned
@@ -24,6 +26,7 @@ This project started as a learning exercise in **systems programming** and grew 
 - Linux syscalls and process management (`fork`, `execve`, `waitid`)
 - Binary size optimization with linker flags, LTO, and symbol stripping
 - Writing essential libc functions by hand
+- Implementing a tokenizer using raw null terminated strings
 
 
 ## Building
@@ -37,6 +40,7 @@ chmod +x build.sh
 # Build release binary (with no_std + LTO)
 ./build.sh -r
 ```
+
 
 ### Build Dependencies
 
@@ -85,19 +89,19 @@ Run from the project root (requires no external libraries, build produces a stat
 .
 ├── build.rs
 ├── build.sh
-├── .cargo
-│   └── config.toml
 ├── Cargo.lock
 ├── Cargo.toml
-├── .gitignore
 ├── LICENSE
 ├── README.md
 └── src
     ├── asm
     │   ├── entrypoint.S
     │   └── syscalls.S
-    ├── libc.rs
+    ├── cstr.rs
+    ├── lexer.rs
     ├── main.rs
+    ├── memlibc.rs
+    ├── siglibc.rs
     └── syscalls.rs
 ```
 

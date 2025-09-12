@@ -78,9 +78,9 @@ Run from the project root (requires no external libraries, build produces a stat
 
 ```bash
 # Release build
-./target/x86_64-unknown-linux-gnu/release/shell
+./target/x86_64-unknown-linux-gnu/release/minsl
 # Debug build
-./target/x86_64-unknown-linux-gnu/debug/shell
+./target/x86_64-unknown-linux-gnu/debug/minsl
 ```
 
 
@@ -112,11 +112,11 @@ It’s intentionally minimal, rough around the edges, and built to explore how m
 
 
 ## Future Ideas
-- Support for command arguments parsing without libc (e.g. `mkdir testdir`)
-- `$PATH` lookup so you can run commands without absolute paths
-- Simple builtins (`cd`, `exit`)
-- Error reporting on failed `execve`
-- Support piping and redirection
+- [x] Support for command arguments parsing without libc (e.g. `mkdir testdir`)
+- [ ] `$PATH` lookup so you can run commands without absolute paths
+- [ ] Simple builtins (`cd`, `exit`)
+- [ ] Error reporting on failed `execve`
+- [ ] Support piping and redirection
 
 
 ## License

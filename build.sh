@@ -50,12 +50,12 @@ while getopts ":cdrh" opt; do
             ;;
         d)
             echo "[*] Building debug..."
-            cargo +nightly build -Z build-std=core,compiler_builtins --target x86_64-unknown-linux-gnu
+            cargo +nightly build -Z build-std=core,compiler_builtins
             run=true
             ;;
         r)
             echo "[*] Building release..."
-            cargo +nightly build -r -Z build-std=core,compiler_builtins --target x86_64-unknown-linux-gnu
+            cargo +nightly build -r -Z build-std=core,compiler_builtins
             run=true
             ;;
         h)

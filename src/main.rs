@@ -2,14 +2,19 @@
 #![no_main]
 
 mod cstr;
-mod lexer;
 mod env;
+mod lexer;
 mod memlibc;
 mod siglibc;
 mod syscalls;
 
-use crate::{cstr::*, env::getenv, lexer::{split, trim}, syscalls::*};
-use core::{mem::zeroed};
+use crate::{
+    cstr::*,
+    env::getenv,
+    lexer::{split, trim},
+    syscalls::*,
+};
+use core::{mem::zeroed, ptr::null};
 
 const CMD_MAX_LENGTH: usize = 255;
 const P_ALL: i32 = 0;
@@ -45,11 +50,7 @@ pub extern "C" fn _main(rsp: *const usize) -> ! {
 
             let pid = _fork();
             if pid == 0 {
-                _execve(
-                    *argve as *const u8,
-                    argve as *const *const u8,
-                    envp,
-                );
+                _execve(*argve as *const u8, argve as *const *const u8, envp);
                 break;
             } else {
                 let mut siginfo = zeroed();

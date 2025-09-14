@@ -16,8 +16,9 @@ This project started as a learning exercise in **systems programming** and grew 
 - Custom minimal cstring manipulation replacements: `strlen`, `strcmp`, `strncmp`, `strchr`
 - Supports launching external programs (e.g. `ls`, `whoami`, `mkdir`, `touch` …)
 - Tokenizes the input string and passes arguments to execve
+- Performs PATH lookup so as to not require absolute paths
 - Can run as Linux `init` inside an **initramfs**
-- Ultra small footprint: **~1.8 KB** statically linked ELF binary
+- Ultra small footprint: **~2.2 KB** statically linked ELF binary
 
 
 ## What I Learned
@@ -27,6 +28,7 @@ This project started as a learning exercise in **systems programming** and grew 
 - Binary size optimization with linker flags, LTO, and symbol stripping
 - Writing essential libc functions by hand
 - Implementing a tokenizer using raw null terminated strings
+- Implementing environment variables and PATH lookup
 
 
 ## Building
@@ -89,8 +91,11 @@ Run from the project root (requires no external libraries, build produces a stat
 .
 ├── build.rs
 ├── build.sh
+├── .cargo
+│   └── config.toml
 ├── Cargo.lock
 ├── Cargo.toml
+├── .gitignore
 ├── LICENSE
 ├── README.md
 └── src
@@ -98,9 +103,11 @@ Run from the project root (requires no external libraries, build produces a stat
     │   ├── entrypoint.S
     │   └── syscalls.S
     ├── cstr.rs
+    ├── env.rs
     ├── lexer.rs
     ├── main.rs
     ├── memlibc.rs
+    ├── path.rs
     ├── siglibc.rs
     └── syscalls.rs
 ```
@@ -113,7 +120,7 @@ It’s intentionally minimal, rough around the edges, and built to explore how m
 
 ## Future Ideas
 - [x] Support for command arguments parsing without libc (e.g. `mkdir testdir`)
-- [ ] `$PATH` lookup so you can run commands without absolute paths
+- [x] `$PATH` lookup so you can run commands without absolute paths
 - [ ] Simple builtins (`cd`, `exit`)
 - [ ] Error reporting on failed `execve`
 - [ ] Support piping and redirection

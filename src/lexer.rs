@@ -1,22 +1,21 @@
+use core::ptr::null_mut;
+
 use crate::cstr::strlen;
 
-const MAX_TOKS: usize = 64;
-
-pub unsafe fn split(mut s: *mut u8, c: u8) -> *const *mut u8 {
-    static mut BUF: [*mut u8; MAX_TOKS] = [core::ptr::null_mut(); MAX_TOKS];
-
+pub unsafe fn split(mut s: *mut u8, c: u8, buf: &mut [*mut u8]) -> usize {
     if *s == 0 {
-        return BUF.as_ptr();
+        buf[0] = null_mut();
+        return 0;
     }
 
     let mut i = 0;
-    while *s != 0 && i < MAX_TOKS - 1 {
+    while *s != 0 && i < buf.len() - 1 {
         while *s == c {
             *s = 0;
             s = s.add(1);
         }
 
-        BUF[i] = s;
+        buf[i] = s;
         i += 1;
 
         while *s != 0 && *s != c {
@@ -29,8 +28,8 @@ pub unsafe fn split(mut s: *mut u8, c: u8) -> *const *mut u8 {
         }
     }
 
-    BUF[i] = core::ptr::null_mut();
-    BUF.as_ptr()
+    buf[i] = null_mut();
+    i
 }
 
 pub unsafe fn trim(mut s: *mut u8) -> *mut u8 {

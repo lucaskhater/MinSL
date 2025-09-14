@@ -1,6 +1,6 @@
 use crate::cstr::*;
 
-pub unsafe fn getenv(mut envp: *const *const u8, s: *const u8) -> Option<*const u8> {
+pub unsafe fn getenv(envp: *const *const u8, s: *const u8) -> Option<*const u8> {
     if *s == 0 || (*envp).is_null() || envp.is_null() {
         return None;
     }

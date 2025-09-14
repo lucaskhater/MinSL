@@ -60,3 +60,16 @@ pub unsafe fn strjoin(s1: *const u8, s2: *const u8, buf: *mut u8) -> usize {
     *buf.add(i + j) = 0;
     i + j
 }
+
+pub unsafe fn strcpy(s: *const u8, target: *mut u8) -> i32 {
+    if s.is_null() || *s == 0 {
+        return -1;
+    }
+
+    let mut i = 0;
+    while *s.add(i) != 0 {
+        *target.add(i) = *s.add(i);
+        i += 1;
+    }
+    0
+}

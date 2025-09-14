@@ -32,15 +32,15 @@ pub unsafe fn strncmp(s1: *const u8, s2: *const u8, n: usize) -> i32 {
     0
 }
 
-pub unsafe fn strchr(s: *const u8, c: u8) -> *const u8 {
+pub unsafe fn strchr(s: *const u8, c: u8) -> Option<*const u8> {
     let mut i = 0;
     loop {
         let x = *s.add(i);
         if x == c {
-            return s.add(i);
+            return Some(s.add(i));
         }
         if x == 0 {
-            return null();
+            return None;
         }
         i += 1;
     }

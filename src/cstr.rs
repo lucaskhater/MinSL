@@ -45,3 +45,18 @@ pub unsafe fn strchr(s: *const u8, c: u8) -> *const u8 {
         i += 1;
     }
 }
+
+pub unsafe fn strjoin(s1: *const u8, s2: *const u8, buf: *mut u8) -> usize {
+    let mut i = 0;
+    while *s1.add(i) != 0 {
+        *buf.add(i) = *s1.add(i);
+        i += 1;
+    }
+    let mut j = 0;
+    while *s2.add(j) != 0 {
+        *buf.add(i + j) = *s2.add(j);
+        j += 1;
+    }
+    *buf.add(i + j) = 0;
+    i + j
+}

@@ -14,6 +14,7 @@ use crate::{
     env::getenv,
     lexer::{split, trim},
     path::path_lookup,
+    siglibc::siginfo_t,
     syscalls::*,
 };
 use core::{mem::zeroed, ptr::null_mut};
@@ -42,16 +43,12 @@ pub extern "C" fn _main(rsp: *const usize) -> ! {
         let mut cmd: [u8; STR_MAX_LENGTH] = [0; STR_MAX_LENGTH];
         let mut path: [u8; STR_MAX_LENGTH] = [0; STR_MAX_LENGTH];
 
+        let argve: &mut [*mut u8] = &mut [null_mut(); ARGVE_MAX_LENGTH];
+
+        write(1, prompt);
+        read(0, &mut usrin);
+
         unsafe {
-            let argve: &mut [*mut u8] = &mut [null_mut(); ARGVE_MAX_LENGTH];
-
-            _write(
-                1,
-                prompt.as_ptr() as *const u8,
-                strlen(prompt.as_ptr() as *const u8),
-            );
-            _read(0, usrin.as_mut_ptr().cast(), STR_MAX_LENGTH);
-
             split(trim(usrin.as_mut_ptr()), b' ', argve);
             match strchr(usrin.as_ptr(), b'/') {
                 None => {
@@ -62,26 +59,28 @@ pub extern "C" fn _main(rsp: *const usize) -> ! {
                     strcpy(*argve.as_ptr(), cmd.as_mut_ptr());
                 }
             }
+        }
 
-            let pid = _fork();
-            if pid == 0 {
-                _execve(cmd.as_ptr(), argve.as_ptr() as *const *const u8, envp);
-                break;
-            } else {
-                let mut siginfo = zeroed();
-                _waitid(P_ALL, 0, &mut siginfo, WEXITED);
-            }
+        let pid = fork();
+        if pid == 0 {
+            execve(&cmd[0], argve.as_ptr() as *const *const u8, envp);
+            break;
+        } else {
+            let mut siginfo = siginfo_t {
+                si_signo: 0,
+                si_errno: 0,
+                si_code: 0,
+                __pad0: 0,
+                _sifields: [0; 112],
+            };
+            waitid(P_ALL, 0, &mut siginfo, WEXITED);
         }
     }
 
-    unsafe {
-        _exit(0);
-    }
+    exit(0);
 }
 
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
-    unsafe {
-        _exit(-1);
-    }
+    exit(-1);
 }

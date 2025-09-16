@@ -12,20 +12,19 @@ mod syscalls;
 use crate::{
     cstr::*,
     env::getenv,
-    lexer::{split, trim},
+    lexer::{split, tokenize, trim, Span},
     path::path_lookup,
     siglibc::siginfo_t,
     syscalls::*,
 };
-use core::{mem::zeroed, ptr::null_mut};
 
 const STR_MAX_LENGTH: usize = 8192;
-const ARGVE_MAX_LENGTH: usize = 512;
+pub const ARGVE_MAX_LENGTH: usize = 512;
 const P_ALL: i32 = 0;
 const WEXITED: i32 = 4;
 
 #[no_mangle]
-pub extern "C" fn _main(rsp: *const usize) -> ! {
+pub fn _main(rsp: *const usize) -> ! {
     let argc: usize;
     let argv: *const *const u8;
     let envp: *const *const u8;
@@ -43,27 +42,36 @@ pub extern "C" fn _main(rsp: *const usize) -> ! {
         let mut cmd: [u8; STR_MAX_LENGTH] = [0; STR_MAX_LENGTH];
         let mut path: [u8; STR_MAX_LENGTH] = [0; STR_MAX_LENGTH];
 
-        let argve: &mut [*mut u8] = &mut [null_mut(); ARGVE_MAX_LENGTH];
+        let mut argvs: [Span; ARGVE_MAX_LENGTH] = [Span::new(0, 0); ARGVE_MAX_LENGTH];
+        let mut argve: [&[u8]; ARGVE_MAX_LENGTH] = [&[]; ARGVE_MAX_LENGTH];
 
         write(1, prompt);
         read(0, &mut usrin);
 
+        let Some(s) = trim(&mut usrin[..]) else {
+            continue;
+        };
+        split(s, b' ', &mut argvs);
+        tokenize(s, &argvs, &mut argve);
+
         unsafe {
-            split(trim(usrin.as_mut_ptr()), b' ', argve);
-            match strchr(usrin.as_ptr(), b'/') {
+            match strchr(&usrin, b'/') {
                 None => {
-                    strcpy(getenv(envp, b"PATH\0".as_ptr()).unwrap(), path.as_mut_ptr());
-                    path_lookup(path.as_mut_ptr(), *argve.as_ptr(), cmd.as_mut_ptr());
+                    strcpy(
+                        getenv(envp.as_ref().unwrap(), b"PATH\0").unwrap(),
+                        &mut path,
+                    );
+                    path_lookup(&mut path, &argve[0], &mut cmd);
                 }
                 Some(_) => {
-                    strcpy(*argve.as_ptr(), cmd.as_mut_ptr());
+                    strcpy(*argve.as_ptr(), &mut cmd);
                 }
             }
         }
 
         let pid = fork();
         if pid == 0 {
-            execve(&cmd[0], argve.as_ptr() as *const *const u8, envp);
+            execve(&cmd, argve.as_ptr() as *const *const u8, envp);
             break;
         } else {
             let mut siginfo = siginfo_t {

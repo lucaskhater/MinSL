@@ -20,13 +20,13 @@ pub fn read(fd: i32, buf: &mut [u8]) -> usize {
     ret as usize
 }
 
-pub fn access(pathname: &u8, mode: i32) -> i32 {
-    let ret = unsafe { _access(pathname, mode) };
+pub fn access(pathname: &[u8], mode: i32) -> i32 {
+    let ret = unsafe { _access(pathname.as_ptr(), mode) };
     ret
 }
 
-pub fn execve(path: &u8, argv: *const *const u8, envp: *const *const u8) -> i32 {
-    let ret = unsafe { _execve(path, argv, envp) };
+pub fn execve(path: &[u8], argv: *const *const u8, envp: *const *const u8) -> i32 {
+    let ret = unsafe { _execve(path.as_ptr(), argv, envp) };
     ret
 }
 

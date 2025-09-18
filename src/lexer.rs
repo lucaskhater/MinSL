@@ -1,55 +1,106 @@
-use core::ptr::null_mut;
+use crate::{
+    cstr::strlen,
+    syscalls::{exit, write},
+};
 
-use crate::cstr::strlen;
-
-pub unsafe fn split(mut s: *mut u8, c: u8, buf: &mut [*mut u8]) -> usize {
-    if *s == 0 {
-        buf[0] = null_mut();
-        return 0;
+pub fn tokenize<'a>(s: &'a [u8], span: &[Span], buf: &mut [&'a [u8]]) -> usize {
+    if buf.len() != span.len() {
+        write(1, b"Wrong buffer size for tokenizer\nAborting...\n");
+        exit(-1);
     }
 
     let mut i = 0;
-    while *s != 0 && i < buf.len() - 1 {
-        while *s == c {
-            *s = 0;
-            s = s.add(1);
-        }
-
-        buf[i] = s;
+    while i < buf.len() {
+        buf[i] = &s[span[i].start..span[i].end];
         i += 1;
-
-        while *s != 0 && *s != c {
-            s = s.add(1);
-        }
-
-        if *s != 0 {
-            *s = 0;
-            s = s.add(1);
-        }
     }
 
-    buf[i] = null_mut();
     i
 }
 
-pub unsafe fn trim(mut s: *mut u8) -> *mut u8 {
-    while is_space(*s) {
-        s = s.add(1);
+pub fn split(s: &mut [u8], c: u8, buf: &mut [Span]) -> usize {
+    let len = s.len();
+    let buf_len = buf.len();
+
+    let mut i = 0;
+    let mut j = 0;
+
+    while i < len && j < buf_len {
+        while i < len && (s[i] == c || s[i] == 0) {
+            i += 1;
+        }
+
+        if i >= len {
+            break;
+        }
+
+        let start = i;
+        while i < len && s[i] != c && s[i] != 0 {
+            i += 1;
+        }
+        let end = i;
+
+        if i < len && s[i] != 0 {
+            s[i] = 0;
+            i += 1;
+        }
+
+        buf[j] = Span {
+            start: start,
+            end: end,
+        };
+
+        j += 1;
     }
 
-    if *s == 0 {
-        return s;
+    j
+}
+
+pub fn trim(s: &mut [u8]) -> Option<&mut [u8]> {
+    let len = strlen(s);
+
+    let mut i = 0;
+    while i < len && is_space(s[i]) {
+        i += 1;
+    }
+    if i == len {
+        if let Some(byte) = s.first_mut() {
+            *byte = 0;
+        }
+        return None;
     }
 
-    let mut i = strlen(s) - 1;
-    while is_space(*s.add(i)) {
-        *s.add(i) = 0;
-        i -= 1;
+    let mut j = len;
+    while j > i && s[j - 1] == 0 {
+        j -= 1;
     }
-    s
+    while j > i && is_space(s[j - 1]) {
+        s[j - 1] = 0;
+        j -= 1;
+    }
+    if j < len {
+        s[j] = 0;
+    }
+
+    return Some(&mut s[i..j]);
 }
 
 #[inline(always)]
-unsafe fn is_space(c: u8) -> bool {
+fn is_space(c: u8) -> bool {
     matches!(c, b' ' | b'\n' | b'\r' | b'\t' | 0x0B | 0x0C)
+}
+
+#[derive(Clone, Copy)]
+pub struct Span {
+    start: usize,
+    end: usize,
+}
+
+impl Span {
+    pub fn new(start: usize, end: usize) -> Self {
+        Self {
+            start: start,
+            end: end,
+        }
+    }
 }

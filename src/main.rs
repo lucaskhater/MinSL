@@ -11,29 +11,29 @@ mod syscalls;
 
 use crate::{
     cstr::*,
-    env::getenv,
-    lexer::{split, trim},
+    env::{capture, getenv, Env},
+    lexer::{split, tokenize, trim, Span},
     path::path_lookup,
+    siglibc::SigInfo,
     syscalls::*,
 };
-use core::{mem::zeroed, ptr::null_mut};
 
 const STR_MAX_LENGTH: usize = 8192;
-const ARGVE_MAX_LENGTH: usize = 512;
+pub const ARGVE_MAX_LENGTH: usize = 512;
 const P_ALL: i32 = 0;
 const WEXITED: i32 = 4;
 
 #[no_mangle]
 pub extern "C" fn _main(rsp: *const usize) -> ! {
-    let argc: usize;
-    let argv: *const *const u8;
-    let envp: *const *const u8;
+    let mut bargv: [&[u8]; ARGVE_MAX_LENGTH + 1] = [&[]; ARGVE_MAX_LENGTH + 1];
+    let mut benvp: [&[u8]; ARGVE_MAX_LENGTH + 1] = [&[]; ARGVE_MAX_LENGTH + 1];
 
-    unsafe {
-        argc = *rsp;
-        argv = rsp.add(1) as *const *const u8;
-        envp = argv.add(argc + 1) as *const *const u8;
-    }
+    let mut env = Env {
+        argc: 0,
+        argv: &mut bargv[..],
+        envp: &mut benvp[..],
+    };
+    let (_, _, envp) = capture(rsp, &mut env);
 
     let prompt: &[u8] = b"MinSL:$ \0";
 
@@ -42,46 +42,54 @@ pub extern "C" fn _main(rsp: *const usize) -> ! {
         let mut cmd: [u8; STR_MAX_LENGTH] = [0; STR_MAX_LENGTH];
         let mut path: [u8; STR_MAX_LENGTH] = [0; STR_MAX_LENGTH];
 
+        let mut argvs: [Span; ARGVE_MAX_LENGTH] = [Span::new(0, 0); ARGVE_MAX_LENGTH];
+        let mut argve: [&[u8]; ARGVE_MAX_LENGTH] = [&[]; ARGVE_MAX_LENGTH];
+
+        write(1, prompt);
+        read(0, &mut usrin);
+
+        let Some(s) = trim(&mut usrin[..]) else {
+            continue;
+        };
+        split(s, b' ', &mut argvs);
+        tokenize(s, &argvs, &mut argve);
+
         unsafe {
-            let argve: &mut [*mut u8] = &mut [null_mut(); ARGVE_MAX_LENGTH];
-
-            _write(
-                1,
-                prompt.as_ptr() as *const u8,
-                strlen(prompt.as_ptr() as *const u8),
-            );
-            _read(0, usrin.as_mut_ptr().cast(), STR_MAX_LENGTH);
-
-            split(trim(usrin.as_mut_ptr()), b' ', argve);
-            match strchr(usrin.as_ptr(), b'/') {
+            match strchr(argve[0], b'/') {
                 None => {
-                    strcpy(getenv(envp, b"PATH\0".as_ptr()).unwrap(), path.as_mut_ptr());
-                    path_lookup(path.as_mut_ptr(), *argve.as_ptr(), cmd.as_mut_ptr());
+                    strcpy(getenv(envp, b"PATH\0").unwrap(), &mut path);
+                    path_lookup(&mut path, &argve[0], &mut cmd);
                 }
                 Some(_) => {
-                    strcpy(*argve.as_ptr(), cmd.as_mut_ptr());
+                    strcpy(*argve.as_ptr(), &mut cmd);
                 }
             }
+        }
 
-            let pid = _fork();
-            if pid == 0 {
-                _execve(cmd.as_ptr(), argve.as_ptr() as *const *const u8, envp);
-                break;
-            } else {
-                let mut siginfo = zeroed();
-                _waitid(P_ALL, 0, &mut siginfo, WEXITED);
-            }
+        let pid = fork();
+        if pid == 0 {
+            execve(
+                &cmd,
+                argve.as_ptr() as *const *const u8,
+                envp.as_ptr() as *const *const u8,
+            );
+            break;
+        } else {
+            let mut siginfo = SigInfo {
+                si_signo: 0,
+                si_errno: 0,
+                si_code: 0,
+                __pad0: 0,
+                _sifields: [0; 112],
+            };
+            waitid(P_ALL, 0, &mut siginfo, WEXITED);
         }
     }
 
-    unsafe {
-        _exit(0);
-    }
+    exit(0);
 }
 
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
-    unsafe {
-        _exit(-1);
-    }
+    exit(-1);
 }

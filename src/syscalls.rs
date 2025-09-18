@@ -1,4 +1,4 @@
-use crate::siglibc::siginfo_t;
+use crate::siglibc::SigInfo;
 
 unsafe extern "C" {
     fn _write(fd: i32, buf: *const u8, count: usize) -> isize;
@@ -6,7 +6,7 @@ unsafe extern "C" {
     fn _access(pathname: *const u8, mode: i32) -> i32;
     fn _execve(path: *const u8, argv: *const *const u8, envp: *const *const u8) -> i32;
     fn _fork() -> i32;
-    fn _waitid(idtype: i32, id: i32, infop: *mut siginfo_t, options: i32) -> i32;
+    fn _waitid(idtype: i32, id: i32, infop: *mut SigInfo, options: i32) -> i32;
     fn _exit(status: i32) -> !;
 }
 
@@ -35,7 +35,7 @@ pub fn fork() -> i32 {
     ret
 }
 
-pub fn waitid(idtype: i32, id: i32, infop: &mut siginfo_t, options: i32) -> i32 {
+pub fn waitid(idtype: i32, id: i32, infop: &mut SigInfo, options: i32) -> i32 {
     let ret = unsafe { _waitid(idtype, id, infop, options) };
     ret
 }

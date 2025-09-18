@@ -1,12 +1,12 @@
 pub fn strlen(s: &[u8]) -> usize {
-    return s.len();
+    s.iter().position(|&b| b == 0).unwrap_or(s.len())
 }
 
 pub fn strcmp(s1: &[u8], s2: &[u8]) -> i32 {
     let mut i = 0;
     loop {
-        let x = s1[i];
-        let y = s2[i];
+        let x = *s1.get(i).unwrap_or(&0);
+        let y = *s2.get(i).unwrap_or(&0);
         if x != y || x == 0 || y == 0 {
             return x as i32 - y as i32;
         }
@@ -16,8 +16,8 @@ pub fn strcmp(s1: &[u8], s2: &[u8]) -> i32 {
 
 pub fn strncmp(s1: &[u8], s2: &[u8], n: usize) -> i32 {
     for i in 0..n {
-        let x = s1[i];
-        let y = s2[i];
+        let x = *s1.get(i).unwrap_or(&0);
+        let y = *s2.get(i).unwrap_or(&0);
         if x != y || x == 0 || y == 0 {
             return x as i32 - y as i32;
         }
@@ -26,17 +26,7 @@ pub fn strncmp(s1: &[u8], s2: &[u8], n: usize) -> i32 {
 }
 
 pub fn strchr(s: &[u8], c: u8) -> Option<usize> {
-    let mut i = 0;
-    loop {
-        let x = s[i];
-        if x == c {
-            return Some(i);
-        }
-        if x == 0 {
-            return None;
-        }
-        i += 1;
-    }
+    s.iter().take_while(|&&b| b != 0).position(|&b| b == c)
 }
 
 pub fn strjoin(s1: &[u8], s2: &[u8], buf: &mut [u8]) -> usize {

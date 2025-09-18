@@ -11,10 +11,10 @@ mod syscalls;
 
 use crate::{
     cstr::*,
-    env::getenv,
+    env::{capture, getenv, Env},
     lexer::{split, tokenize, trim, Span},
     path::path_lookup,
-    siglibc::siginfo_t,
+    siglibc::SigInfo,
     syscalls::*,
 };
 
@@ -24,16 +24,16 @@ const P_ALL: i32 = 0;
 const WEXITED: i32 = 4;
 
 #[no_mangle]
-pub fn _main(rsp: *const usize) -> ! {
-    let argc: usize;
-    let argv: *const *const u8;
-    let envp: *const *const u8;
+pub extern "C" fn _main(rsp: *const usize) -> ! {
+    let mut bargv: [&[u8]; ARGVE_MAX_LENGTH + 1] = [&[]; ARGVE_MAX_LENGTH + 1];
+    let mut benvp: [&[u8]; ARGVE_MAX_LENGTH + 1] = [&[]; ARGVE_MAX_LENGTH + 1];
 
-    unsafe {
-        argc = *rsp;
-        argv = rsp.add(1) as *const *const u8;
-        envp = argv.add(argc + 1) as *const *const u8;
-    }
+    let mut env = Env {
+        argc: 0,
+        argv: &mut bargv[..],
+        envp: &mut benvp[..],
+    };
+    let (_, _, envp) = capture(rsp, &mut env);
 
     let prompt: &[u8] = b"MinSL:$ \0";
 
@@ -55,12 +55,9 @@ pub fn _main(rsp: *const usize) -> ! {
         tokenize(s, &argvs, &mut argve);
 
         unsafe {
-            match strchr(&usrin, b'/') {
+            match strchr(argve[0], b'/') {
                 None => {
-                    strcpy(
-                        getenv(envp.as_ref().unwrap(), b"PATH\0").unwrap(),
-                        &mut path,
-                    );
+                    strcpy(getenv(envp, b"PATH\0").unwrap(), &mut path);
                     path_lookup(&mut path, &argve[0], &mut cmd);
                 }
                 Some(_) => {
@@ -71,10 +68,14 @@ pub fn _main(rsp: *const usize) -> ! {
 
         let pid = fork();
         if pid == 0 {
-            execve(&cmd, argve.as_ptr() as *const *const u8, envp);
+            execve(
+                &cmd,
+                argve.as_ptr() as *const *const u8,
+                envp.as_ptr() as *const *const u8,
+            );
             break;
         } else {
-            let mut siginfo = siginfo_t {
+            let mut siginfo = SigInfo {
                 si_signo: 0,
                 si_errno: 0,
                 si_code: 0,

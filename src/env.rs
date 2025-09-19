@@ -1,7 +1,7 @@
 use crate::cstr::*;
 
 pub unsafe fn getenv<'a>(envp: &[&'a [u8]], s: &[u8]) -> Option<&'a [u8]> {
-    if s[0] == 0 || s.is_empty() || envp[0].is_empty() {
+    if s.is_empty() || s[0] == 0 || envp[0].is_empty() {
         return None;
     }
 

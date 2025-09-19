@@ -57,7 +57,7 @@ pub extern "C" fn _main(rsp: *const usize) -> ! {
         unsafe {
             match strchr(argve[0], b'/') {
                 None => {
-                    strcpy(getenv(envp, b"PATH\0").unwrap(), &mut path);
+                    strcpy(getenv(envp, b"PATH").unwrap(), &mut path);
                     path_lookup(&mut path, &argve[0], &mut cmd);
                 }
                 Some(_) => {

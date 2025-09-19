@@ -4,6 +4,7 @@ use crate::{
 };
 
 pub fn tokenize<'a>(s: &'a [u8], span: &[Span], buf: &mut [&'a [u8]]) -> usize {
+    write(1, b"reached tokenize\n");
     if buf.len() != span.len() {
         write(1, b"Wrong buffer size for tokenizer\nAborting...\n");
         exit(-1);
@@ -19,6 +20,7 @@ pub fn tokenize<'a>(s: &'a [u8], span: &[Span], buf: &mut [&'a [u8]]) -> usize {
 }
 
 pub fn split(s: &mut [u8], c: u8, buf: &mut [Span]) -> usize {
+    write(1, b"reached split\n");
     let len = s.len();
     let buf_len = buf.len();
 
@@ -57,6 +59,7 @@ pub fn split(s: &mut [u8], c: u8, buf: &mut [Span]) -> usize {
 }
 
 pub fn trim(s: &mut [u8]) -> Option<&mut [u8]> {
+    write(1, b"reached trim\n");
     let len = strlen(s);
 
     let mut i = 0;
